@@ -22,7 +22,7 @@ import collections
 import sonnet as snt
 import tensorflow as tf
 
-import util
+from dnc import util
 
 # Ensure values are greater than epsilon to avoid numerical instability.
 _EPSILON = 1e-6
@@ -32,7 +32,7 @@ TemporalLinkageState = collections.namedtuple('TemporalLinkageState',
 
 
 def _vector_norms(m):
-  squared_norms = tf.reduce_sum(m * m, axis=2, keep_dims=True)
+  squared_norms = tf.reduce_sum(m * m, axis=2, keepdims=True)
   return tf.sqrt(squared_norms + _EPSILON)
 
 

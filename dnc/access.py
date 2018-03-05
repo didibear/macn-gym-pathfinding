@@ -22,8 +22,8 @@ import collections
 import sonnet as snt
 import tensorflow as tf
 
-import addressing
-import util
+from dnc import addressing
+from dnc import util
 
 AccessState = collections.namedtuple('AccessState', (
     'memory', 'read_weights', 'write_weights', 'linkage', 'usage'))
