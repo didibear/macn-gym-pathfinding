@@ -2,61 +2,53 @@ import gym
 import gym_pathfinding
 
 from gym_pathfinding.games.gridworld import generate_grid, MOUVEMENT
+from gym_pathfinding.envs.partially_observable_env import partial_grid
 from astar import astar
 from tqdm import tqdm
 import numpy as np
 import operator
 import itertools
 
-def generate_dataset(size, shape, *, grid_type="free", verbose=False):
+def generate_dataset(size, shape, *, grid_type="free", observable_depth=2, verbose=False):
     """
     Arguments
     ---------
-    size : number of training set generated
+    size : number of episodes generated
     shape : the grid shape
     grid_type : the type of grid ("free", "obstacle", "maze")
 
     Return
     ------
-    return images, S1s, S2s, labels
+    return episodes
 
+    each episode contains a list of (images, labels):
     image : (m, n, 2) grid with state and goal on the 3rd axis
-        state = (m, n) grid with 1 and 0 ;
+        state = (m, n) grid with 1 (wall), 0 (free) and -1 (unseen) ;
         goal = (m, n) grid with 10 at goal position
-
-    S1 : vertical position of the player
-    S2 : horizontal position of the player
     label : the action made
     """
-    if verbose: progress_bar = tqdm(total=size)
-
-    images = []
-    S1s = []
-    S2s = []
-    labels = []
-
-    n = 0
-
-    while True:
-
+    episodes = []
+    for _ in tqdm(range(size)):
         grid, start, goal = generate_grid(shape, grid_type=grid_type)
         path, action_planning = compute_action_planning(grid, start, goal)
 
         goal_grid = create_goal_grid(grid.shape, goal)
-        image = np.stack([grid, goal_grid], axis=2)
+
+        images = []
+        labels = []
 
         for action, position in zip(action_planning, path):
+            
+            _partial_grid = partial_grid(grid, position, observable_depth)
+            _partial_grid = grid_with_start(_partial_grid, position)
+
+            image = np.stack([_partial_grid, goal_grid], axis=2)
+
             images.append(image)
-            S1s.append(position[0])
-            S2s.append(position[1])
             labels.append(action)
 
-            if verbose : progress_bar.update(1)
-
-            n += 1 
-            if n >= size:
-                if verbose : progress_bar.close()
-                return images, S1s, S2s, labels
+        episodes.append((images, labels))
+    return episodes
 
 # reversed MOUVEMENT dict
 ACTION = {mouvement: action for action, mouvement in dict(enumerate(MOUVEMENT)).items()}
@@ -82,7 +74,10 @@ def create_goal_grid(shape, goal):
     goal_grid[goal] = 10
     return goal_grid
 
-
+def grid_with_start(grid, start_position):
+    _grid = np.array(grid, copy=True)
+    _grid[start_position] = 2
+    return _grid
 
 def main():
     import joblib
@@ -90,15 +85,16 @@ def main():
 
     parser = argparse.ArgumentParser(description='Generate data (images, S1s, S2s, labels)')
     parser.add_argument('--out', '-o', type=str, default='./data/dataset.pkl', help='Path to save the dataset')
-    parser.add_argument('--size', '-s', type=int, default=100000, help='Number of example')
-    parser.add_argument('--shape', type=int, default=[9, 9], nargs=2, help='Shape of the grid (e.g. --shape 9 9)')
-    parser.add_argument('--grid_type', type=str, default='obstacle', help='Type of grid : "free", "obstacle" or "maze"')
+    parser.add_argument('--size', '-s', type=int, default=10000, help='Number of example')
+    parser.add_argument('--shape', type=int, default=[7, 7], nargs=2, help='Shape of the grid (e.g. --shape 9 9)')
+    parser.add_argument('--grid_type', type=str, default='free', help='Type of grid : "free", "obstacle" or "maze"')
     args = parser.parse_args()
 
     dataset = generate_dataset(args.size, args.shape, 
-        grid_type=args.grid_type, verbose=True
+        grid_type=args.grid_type, 
+        observable_depth=2,
+        verbose=True
     )
-
 
     print("saving data into {}".format(args.out))
 
