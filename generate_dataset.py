@@ -9,7 +9,7 @@ import numpy as np
 import operator
 import itertools
 
-def generate_dataset(size, shape, *, grid_type="free", observable_depth=2, verbose=False):
+def generate_dataset(size, shape, *, timesteps= 10, grid_type="free", observable_depth=2, verbose=False):
     """
     Arguments
     ---------
@@ -19,7 +19,7 @@ def generate_dataset(size, shape, *, grid_type="free", observable_depth=2, verbo
 
     Return
     ------
-    return episodes
+    return episodes, its shape = (size, timesteps, (shape[0], shape[1], 2), )
 
     each episode contains a list of (images, labels):
     image : (m, n, 2) grid with state and goal on the 3rd axis
@@ -37,12 +37,16 @@ def generate_dataset(size, shape, *, grid_type="free", observable_depth=2, verbo
         images = []
         labels = []
 
-        for action, position in zip(action_planning, path):
-            
-            _partial_grid = partial_grid(grid, position, observable_depth)
-            _partial_grid = grid_with_start(_partial_grid, position)
+        for timestep in range(timesteps):
+            # at the end, pad the episode with the last action
+            if (timestep < len(action_planning)): 
+                action = action_planning[timestep]
+                position = path[timestep]
+                
+                _partial_grid = partial_grid(grid, position, observable_depth)
+                _partial_grid = grid_with_start(_partial_grid, position)
 
-            image = np.stack([_partial_grid, goal_grid], axis=2)
+                image = np.stack([_partial_grid, goal_grid], axis=2)
 
             images.append(image)
             labels.append(action)
@@ -85,9 +89,10 @@ def main():
 
     parser = argparse.ArgumentParser(description='Generate data (images, S1s, S2s, labels)')
     parser.add_argument('--out', '-o', type=str, default='./data/dataset.pkl', help='Path to save the dataset')
-    parser.add_argument('--size', '-s', type=int, default=10000, help='Number of example')
+    parser.add_argument('--size', '-s', type=int, default=20, help='Number of example')
     parser.add_argument('--shape', type=int, default=[7, 7], nargs=2, help='Shape of the grid (e.g. --shape 9 9)')
     parser.add_argument('--grid_type', type=str, default='free', help='Type of grid : "free", "obstacle" or "maze"')
+    parser.add_argument('--timesteps', type=int, default=10, help='Number of timestep per episode (fixed for all)')
     args = parser.parse_args()
 
     dataset = generate_dataset(args.size, args.shape, 
@@ -96,12 +101,9 @@ def main():
         verbose=True
     )
 
-    print("saving data into {}".format(args.out))
-
-    # np.save(args.out, dataset)
+    print("Saving data into {}".format(args.out))
     joblib.dump(dataset, args.out)
-
-    print("done")
+    print("Done")
 
 if __name__ == "__main__":
     main()

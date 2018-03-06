@@ -32,7 +32,7 @@ TemporalLinkageState = collections.namedtuple('TemporalLinkageState',
 
 
 def _vector_norms(m):
-  squared_norms = tf.reduce_sum(m * m, axis=2, keepdims=True)
+  squared_norms = tf.reduce_sum(m * m, axis=2, keep_dims=True)
   return tf.sqrt(squared_norms + _EPSILON)
 
 
