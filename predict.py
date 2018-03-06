@@ -3,7 +3,7 @@ import gym_pathfinding
 from time import sleep
 import tensorflow as tf 
 import numpy as np 
-from model import MACN
+from model import MACN, VINConfig
 from itertools import permutations
 ### MACN conf
 
@@ -20,18 +20,16 @@ word_size = 8
 num_reads = 4
 num_writes = 1
 
-episodes = 20
+episodes = 5
 
 
-imsize = 7
+imsize = 9
 
 def main():
-
-    # Input tensor: Stack obstacle image and goal image, i.e. ch_i = 2
-    X = tf.placeholder(tf.float32, shape=[None, imsize, imsize, 2], name='X')
-
     # MACN model
-    macn = MACN(X, k=k, ch_i=ch_i, ch_h=ch_h, ch_q=ch_q, 
+    macn = MACN(
+        image_shape=[imsize, imsize, 2],
+        vin_config=VINConfig(k=k, ch_h=ch_h, ch_q=ch_q), 
         access_config={
             "memory_size": memory_size, "word_size": word_size, "num_reads": num_reads, "num_writes": num_writes
         }, 
@@ -43,7 +41,7 @@ def main():
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
-        saver.restore(sess, "./model/weights.ckpt")
+        saver.restore(sess, "./model/weights_batch.ckpt")
 
         env = gym.make('partially-observable-pathfinding-free-{n}x{n}-d2-v0'.format(n=imsize))
 
@@ -60,7 +58,7 @@ def main():
                 grid, grid_goal = parse_state(state)
 
                 actions_probabilities = sess.run([macn.prob_actions], feed_dict={
-                    X: [np.stack([grid, grid_goal], axis=2)],
+                    macn.X: [np.stack([grid, grid_goal], axis=2)],
                 })
                 
                 action = np.argmax(actions_probabilities)

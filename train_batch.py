@@ -3,17 +3,19 @@ import time
 import numpy as np
 import os
 
-from model import MACN, VINConfig
+from model import BatchMACN, VINConfig
 from dataset import get_datasets
 
 FLAGS = tf.flags.FLAGS
 
 # Hyperparameter
 tf.flags.DEFINE_integer("epochs",           10,    "Number of epochs for training")
-tf.flags.DEFINE_integer("ep_per_epoch",     1000,  "Number of episodes per epochs")
+tf.flags.DEFINE_integer("batch_per_epoch",  100,   "Number of episodes per epochs")
 tf.flags.DEFINE_float(  "learning_rate",    10e-5, "The learning rate")
 
 ### MACN conf
+tf.flags.DEFINE_integer("batch_size",   10,  "Batch size (batch of episode)")
+tf.flags.DEFINE_integer("seq_length",   10, "Length of an episode (nb timesteps)")
 
 # VIN conf
 tf.flags.DEFINE_integer("k",    10,     "Number of iteration for planning (VIN)")
@@ -29,13 +31,13 @@ tf.flags.DEFINE_integer("num_read_heads",   4,      "Number of memory read heads
 tf.flags.DEFINE_integer("num_write_heads",  1,      "Number of memory write heads.")
 
 tf.flags.DEFINE_string('dataset', "./data/dataset.pkl", "Path to dataset file")
-tf.flags.DEFINE_string('save', "./model/weights.ckpt", "File to save the weights")
-tf.flags.DEFINE_string('load', "./model/weights.ckpt", "File to load the weights")
+tf.flags.DEFINE_string('save', "./model/weights_batch.ckpt", "File to save the weights")
+tf.flags.DEFINE_string('load', "./model/weights_batch.ckpt", "File to load the weights")
 
 def main(args):
     checks()
 
-    macn = MACN(
+    macn = BatchMACN(
         image_shape=[9, 9, 2],
         vin_config=VINConfig(k=FLAGS.k, ch_h=FLAGS.ch_h, ch_q=FLAGS.ch_q),
         access_config={
@@ -46,10 +48,13 @@ def main(args):
         }, 
         controller_config={
             "hidden_size": FLAGS.hidden_size
-        }
+        }, 
+        batch_size=FLAGS.batch_size,
+        seq_length=FLAGS.seq_length        
     )
 
-    y = tf.placeholder(tf.int64, shape=[None], name='y') # labels : actions {0,1,2,3}
+    # y = [batch, labels]
+    y = tf.placeholder(tf.int64, shape=[None, None], name='y') # labels : actions {0,1,2,3}
 
     # Training
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=macn.logits, name='cross_entropy')
@@ -60,12 +65,12 @@ def main(args):
     y_ = tf.argmax(macn.prob_actions, axis=-1) # predicted action
     nb_errors = tf.reduce_sum(tf.to_float(tf.not_equal(y_, y))) # Number of wrongly selected actions
 
-    def train_on_episode(images, labels):
-        _, _loss, _nb_err = sess.run([train_step, loss, nb_errors], feed_dict={macn.X : images, y : labels})
+    def train_on_episode_batch(batch_images, batch_labels):
+        _, _loss, _nb_err = sess.run([train_step, loss, nb_errors], feed_dict={macn.X : batch_images, y : batch_labels})
         return _loss, _nb_err
         
-    def test_on_episode(images, labels):
-        return sess.run([loss, nb_errors], feed_dict={macn.X : images, y : labels})
+    def test_on_episode_batch(batch_images, batch_labels):
+        return sess.run([loss, nb_errors], feed_dict={macn.X : batch_images, y : batch_labels})
 
     trainset, testset = get_datasets(FLAGS.dataset, test_percent=0.1)
     
@@ -82,7 +87,7 @@ def main(args):
         for epoch in range(1, FLAGS.epochs + 1):
             start_time = time.time()
 
-            mean_loss, mean_accuracy = compute_on_dataset(sess, trainset, train_on_episode)
+            mean_loss, mean_accuracy = compute_on_dataset(sess, trainset, train_on_episode_batch)
             
             print('Epoch: {:3d} ({:.1f} s):'.format(epoch, time.time() - start_time))
             print('\t Train Loss: {:.5f} \t Train accuracy: {:.2f}%'.format(mean_loss, 100*(mean_accuracy)))
@@ -92,30 +97,34 @@ def main(args):
 
 
         print('Testing...')
-        mean_loss, mean_accuracy = compute_on_dataset(sess, testset, test_on_episode)
+        mean_loss, mean_accuracy = compute_on_dataset(sess, testset, test_on_episode_batch)
         print('Test Accuracy: {:.2f}%'.format(100*(mean_accuracy)))
 
 
-def compute_on_dataset(sess, dataset, compute_episode):
+def compute_on_dataset(sess, dataset, compute_episode_batch):
     total_loss = 0
     total_accuracy = 0
 
-    for episode in range(1, FLAGS.ep_per_epoch + 1):
+    for episode in range(1, FLAGS.batch_per_epoch + 1):
         # model_state = macn.dnc_core.zero_state(1, dtype=tf.float32)
-
         # sess.reset(macn.state_in)
+    
+        batch_images = []
+        batch_labels = []
+        for batch in range(FLAGS.batch_size):
+            images, labels = dataset.next_episode()
+            batch_images.append(images)
+            batch_labels.append(labels)
 
-        images, labels = dataset.next_episode()
-        
-        loss, nb_err = compute_episode(images, labels)
+        loss, nb_err = compute_episode_batch(batch_images, batch_labels)
 
-        accuracy = 1 - (nb_err / labels.shape[0])
-        
-        total_loss += loss
+        accuracy = 1 - (nb_err / (FLAGS.batch_size * FLAGS.seq_length))
+
+        total_loss += loss / FLAGS.batch_size
         total_accuracy += accuracy
     
-    mean_loss = total_loss / FLAGS.ep_per_epoch
-    mean_accuracy = total_accuracy / FLAGS.ep_per_epoch
+    mean_loss = total_loss / FLAGS.batch_per_epoch
+    mean_accuracy = total_accuracy / FLAGS.batch_per_epoch
     return mean_loss, mean_accuracy
 
         
