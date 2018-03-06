@@ -36,3 +36,11 @@ class Dataset(object):
         labels = np.array(labels).astype(float)
         return images, labels
 
+    def next_episode_batch(self, batch_size):
+        batch_images = []
+        batch_labels = []
+        for _ in range(batch_size):
+            images, labels = self.next_episode()
+            batch_images.append(images)
+            batch_labels.append(labels)
+        return batch_images, batch_labels

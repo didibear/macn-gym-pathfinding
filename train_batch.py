@@ -9,17 +9,21 @@ from dataset import get_datasets
 FLAGS = tf.flags.FLAGS
 
 # Hyperparameter
-tf.flags.DEFINE_integer("epochs",           10,    "Number of epochs for training")
+tf.flags.DEFINE_integer("epochs",           30,    "Number of epochs for training")
 tf.flags.DEFINE_integer("batch_per_epoch",  100,   "Number of episodes per epochs")
 tf.flags.DEFINE_float(  "learning_rate",    10e-5, "The learning rate")
 
-### MACN conf
-tf.flags.DEFINE_integer("batch_size",   10,  "Batch size (batch of episode)")
+# MACN conf
+tf.flags.DEFINE_integer("im_h", 9,  "Image height")
+tf.flags.DEFINE_integer("im_w", 9,  "Image width")
+tf.flags.DEFINE_integer("ch_i", 2,  "Channels in input layer (~2 in [grid, reward])")
+
+# Batch MACN conf
+tf.flags.DEFINE_integer("batch_size",   32,  "Batch size (batch of episode)")
 tf.flags.DEFINE_integer("seq_length",   10, "Length of an episode (nb timesteps)")
 
 # VIN conf
 tf.flags.DEFINE_integer("k",    10,     "Number of iteration for planning (VIN)")
-tf.flags.DEFINE_integer("ch_i", 2,      "Channels in input layer (image)")
 tf.flags.DEFINE_integer("ch_q", 4,      "Channels in q layer (~actions)")
 tf.flags.DEFINE_integer("ch_h", 150,    "Channels in initial hidden layer")
 
@@ -38,7 +42,7 @@ def main(args):
     checks()
 
     macn = BatchMACN(
-        image_shape=[9, 9, 2],
+        image_shape=[FLAGS.im_h, FLAGS.im_w, FLAGS.ch_i],
         vin_config=VINConfig(k=FLAGS.k, ch_h=FLAGS.ch_h, ch_q=FLAGS.ch_q),
         access_config={
             "memory_size": FLAGS.memory_size, 
@@ -105,17 +109,10 @@ def compute_on_dataset(sess, dataset, compute_episode_batch):
     total_loss = 0
     total_accuracy = 0
 
-    for episode in range(1, FLAGS.batch_per_epoch + 1):
-        # model_state = macn.dnc_core.zero_state(1, dtype=tf.float32)
-        # sess.reset(macn.state_in)
-    
-        batch_images = []
-        batch_labels = []
-        for batch in range(FLAGS.batch_size):
-            images, labels = dataset.next_episode()
-            batch_images.append(images)
-            batch_labels.append(labels)
-
+    for batch in range(1, FLAGS.batch_per_epoch + 1):
+        
+        batch_images, batch_labels = dataset.next_episode_batch(FLAGS.batch_size)
+        
         loss, nb_err = compute_episode_batch(batch_images, batch_labels)
 
         accuracy = 1 - (nb_err / (FLAGS.batch_size * FLAGS.seq_length))

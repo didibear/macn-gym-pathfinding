@@ -44,7 +44,7 @@ class MACN(object):
         # Memory part
         self.dnc_core = DNC(access_config, controller_config, output_size=vin_config.ch_q)
         self.state_in = self.dnc_core.initial_state(1)
-    
+
         self.logits, self.state_out = tf.nn.dynamic_rnn(
             cell=self.dnc_core,
             inputs=v_batch,
@@ -87,8 +87,8 @@ class BatchMACN(object):
 
         # Memory part
         self.dnc_core = DNC(access_config, controller_config, output_size=vin_config.ch_q)
-        self.state_in = self.dnc_core.initial_state(batch_size or 1)
-    
+        self.state_in = self.dnc_core.initial_state(batch_size)
+
         self.logits, self.state_out = tf.nn.dynamic_rnn(
             cell=self.dnc_core,
             inputs=v_batch,

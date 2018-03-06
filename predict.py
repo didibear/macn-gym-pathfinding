@@ -20,7 +20,7 @@ word_size = 8
 num_reads = 4
 num_writes = 1
 
-episodes = 5
+episodes = 200
 
 
 imsize = 9
@@ -38,7 +38,6 @@ def main():
         }
     )
 
-
     saver = tf.train.Saver()
     with tf.Session() as sess:
         saver.restore(sess, "./model/weights_batch.ckpt")
@@ -50,15 +49,18 @@ def main():
             env.seed(episode)
             print(episode, end="\r")
 
+            model_state = sess.run([macn.state_in])
+
             state = env.reset()
             for timestep in range(15):
-                env.render()
-                sleep(0.2)
+                # env.render()
+                # sleep(0.2)
 
                 grid, grid_goal = parse_state(state)
 
-                actions_probabilities = sess.run([macn.prob_actions], feed_dict={
+                actions_probabilities, model_state = sess.run([macn.prob_actions, macn.state_out], feed_dict={
                     macn.X: [np.stack([grid, grid_goal], axis=2)],
+                    macn.state_in: model_state
                 })
                 
                 action = np.argmax(actions_probabilities)
