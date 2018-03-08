@@ -3,7 +3,7 @@ import time
 import numpy as np
 import os
 
-from model import MACN, VINConfig
+from macn.model import MACN, VINConfig
 from dataset import get_datasets
 
 FLAGS = tf.flags.FLAGS

@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np 
 
 from time import sleep
-from model import MACN, VINConfig
+from macn.model import MACN, VINConfig
 
 
 
@@ -24,7 +24,6 @@ num_reads = 4
 num_writes = 1
 
 episodes = 200
-
 
 imsize = 9
 

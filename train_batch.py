@@ -3,13 +3,13 @@ import time
 import numpy as np
 import os
 
-from model import BatchMACN, VINConfig
+from macn.model import BatchMACN, VINConfig
 from dataset import get_datasets
 
 FLAGS = tf.flags.FLAGS
 
 # Hyperparameter
-tf.flags.DEFINE_integer("epochs",           30,    "Number of epochs for training")
+tf.flags.DEFINE_integer("epochs",           5,    "Number of epochs for training")
 tf.flags.DEFINE_integer("batch_per_epoch",  100,   "Number of episodes per epochs")
 tf.flags.DEFINE_float(  "learning_rate",    10e-5, "The learning rate")
 
@@ -19,8 +19,8 @@ tf.flags.DEFINE_integer("im_w", 9,  "Image width")
 tf.flags.DEFINE_integer("ch_i", 2,  "Channels in input layer (~2 in [grid, reward])")
 
 # Batch MACN conf
-tf.flags.DEFINE_integer("batch_size",   32,  "Batch size (batch of episode)")
 tf.flags.DEFINE_integer("seq_length",   10,  "Length of an episode (nb timesteps)")
+tf.flags.DEFINE_integer("batch_size",   32,  "Batch size (batch of episode)")
 
 # VIN conf
 tf.flags.DEFINE_integer("k",    10,     "Number of iteration for planning (VIN)")
