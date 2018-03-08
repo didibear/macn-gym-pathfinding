@@ -27,7 +27,7 @@ import numpy as np
 import sonnet as snt
 import tensorflow as tf
 
-from dnc import access
+from macn.dnc import access
 
 DNCState = collections.namedtuple('DNCState', ('access_output', 'access_state',
                                                'controller_state'))

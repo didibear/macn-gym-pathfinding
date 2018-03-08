@@ -1,10 +1,10 @@
-import tensorflow as tf
-from  dnc.dnc import DNC
+
 
 import numpy as np
 import tensorflow as tf
-
 from collections import namedtuple
+
+from macn.dnc.dnc import DNC
 
 class MACNConfig(namedtuple("MACNConfig", ["image_shape", "vin_config", "access_config", "controller_config"])):
     """
