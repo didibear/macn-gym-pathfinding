@@ -1,11 +1,14 @@
 import gym
 import gym_pathfinding
-from time import sleep
+
 import tensorflow as tf 
 import numpy as np 
+
+from time import sleep
 from model import MACN, VINConfig
-from itertools import permutations
-### MACN conf
+
+
+
 
 # VIN conf
 k = 10
@@ -82,6 +85,7 @@ def create_goal_grid(shape, goal):
     goal_grid = np.zeros(shape, dtype=np.int8)
     goal_grid[goal] = 10
     return goal_grid
+
 
 if __name__ == "__main__":
     main()

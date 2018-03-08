@@ -37,9 +37,9 @@ class MACN(object):
         self.X = tf.placeholder(tf.float32, shape=[None] + image_shape, name='X')
 
         # Execute planning (estimate state value function)
-        self.v = VIN(self.X, vin_config)
+        self.rv = VIN(self.X, vin_config)
 
-        v_batch = tf.expand_dims(self.v, axis=0, name="v_batch")
+        rv_batch = tf.expand_dims(self.rv, axis=0, name="rv_batch")
 
         # Memory part
         self.dnc_core = DNC(access_config, controller_config, output_size=vin_config.ch_q)
@@ -47,7 +47,7 @@ class MACN(object):
 
         self.logits, self.state_out = tf.nn.dynamic_rnn(
             cell=self.dnc_core,
-            inputs=v_batch,
+            inputs=rv_batch,
             initial_state=self.state_in
         )
 
@@ -81,9 +81,9 @@ class BatchMACN(object):
         X_unbatch = tf.reshape(self.X, shape=[batch_size * seq_length] + image_shape)
 
         # Execute planning (estimate state value function)
-        self.v = VIN(X_unbatch, vin_config)
+        self.rv = VIN(X_unbatch, vin_config)
 
-        v_batch = tf.reshape(self.v, shape=[batch_size, seq_length, -1])
+        rv_batch = tf.reshape(self.rv, shape=[batch_size, seq_length, -1], name="rv_batch")
 
         # Memory part
         self.dnc_core = DNC(access_config, controller_config, output_size=vin_config.ch_q)
@@ -91,7 +91,7 @@ class BatchMACN(object):
 
         self.logits, self.state_out = tf.nn.dynamic_rnn(
             cell=self.dnc_core,
-            inputs=v_batch,
+            inputs=rv_batch,
             initial_state=self.state_in
         )
         self.prob_actions = tf.nn.softmax(self.logits, name='probability_actions')
@@ -127,7 +127,8 @@ def VIN(X, vin_config):
         q = conv2d(inputs=rv, filters=vin_config.ch_q, name='q', reuse=True) # Sharing weights
         v = tf.reduce_max(q, axis=3, keep_dims=True, name='v')
 
-    return v
+    rv = tf.concat([r, v], axis=3)
+    return rv
 
 def conv2d(*, inputs, filters, name, use_bias=False, reuse=False):
     return tf.layers.conv2d(

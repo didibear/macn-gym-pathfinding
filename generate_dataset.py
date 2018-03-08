@@ -19,13 +19,14 @@ def generate_dataset(size, shape, *, timesteps= 10, grid_type="free", observable
 
     Return
     ------
-    return episodes, its shape = (size, timesteps, (shape[0], shape[1], 2), )
+    return episodes, a list of tuple (images, labels)
 
-    each episode contains a list of (images, labels):
+    each episode contains a list of :
     image : (m, n, 2) grid with state and goal on the 3rd axis
         state = (m, n) grid with 1 (wall), 0 (free) and -1 (unseen) ;
         goal = (m, n) grid with 10 at goal position
     label : the action made
+
     """
     episodes = []
     for _ in tqdm(range(size)):
@@ -87,9 +88,9 @@ def main():
     import joblib
     import argparse
 
-    parser = argparse.ArgumentParser(description='Generate data (images, S1s, S2s, labels)')
+    parser = argparse.ArgumentParser(description='Generate data, list of (images, labels)')
     parser.add_argument('--out', '-o', type=str, default='./data/dataset.pkl', help='Path to save the dataset')
-    parser.add_argument('--size', '-s', type=int, default=5000, help='Number of example')
+    parser.add_argument('--size', '-s', type=int, default=10000, help='Number of example')
     parser.add_argument('--shape', type=int, default=[9, 9], nargs=2, help='Shape of the grid (e.g. --shape 9 9)')
     parser.add_argument('--grid_type', type=str, default='free', help='Type of grid : "free", "obstacle" or "maze"')
     parser.add_argument('--timesteps', type=int, default=10, help='Number of timestep per episode (constant for all, no matter what happened)')

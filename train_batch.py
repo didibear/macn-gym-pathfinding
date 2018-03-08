@@ -20,7 +20,7 @@ tf.flags.DEFINE_integer("ch_i", 2,  "Channels in input layer (~2 in [grid, rewar
 
 # Batch MACN conf
 tf.flags.DEFINE_integer("batch_size",   32,  "Batch size (batch of episode)")
-tf.flags.DEFINE_integer("seq_length",   10, "Length of an episode (nb timesteps)")
+tf.flags.DEFINE_integer("seq_length",   10,  "Length of an episode (nb timesteps)")
 
 # VIN conf
 tf.flags.DEFINE_integer("k",    10,     "Number of iteration for planning (VIN)")
