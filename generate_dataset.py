@@ -3,7 +3,7 @@ import gym_pathfinding
 
 from gym_pathfinding.games.gridworld import generate_grid, MOUVEMENT
 from gym_pathfinding.envs.partially_observable_env import partial_grid
-from astar import astar
+from gym_pathfinding.games.astar import astar
 from tqdm import tqdm
 import numpy as np
 import operator
