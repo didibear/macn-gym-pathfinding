@@ -6,6 +6,28 @@ import tensorflow as tf
 
 from collections import namedtuple
 
+class MACNConfig(namedtuple("MACNConfig", ["image_shape", "vin_config", "access_config", "controller_config"])):
+    """
+    ### Configuration for MACN model
+    image_shape :   The shape of the input image (e.g. [9, 9, 2])
+
+    ### VIN conf
+    vin_config : dictionnary of the VIN config
+        - k :       Number of iteration for planning (value iteration)
+        - ch_q :    Channels in q layer (~actions)
+        - ch_h :    Channels in initial hidden layer
+
+    ### DNC Conf
+    access_config : dictionary of access module configurations.
+        - memory_size :     The number of memory slots.
+        - word_size :       The width of each memory slot.
+        - num_read_heads :  Number of memory read heads.
+        - num_write_heads : Number of memory write heads.
+    controller_config : dictionary of controller (LSTM) module configurations.
+        - hidden_size :     Size of LSTM hidden layer.
+    """
+    pass
+
 VINConfig = namedtuple("VINConf", ["k", "ch_h", "ch_q"])
 
 class MACN(object):
@@ -32,6 +54,16 @@ class MACN(object):
         - goal (m, n) = grid with 10 at goal position
     prob_actions : (ch_q,) - the action probabilities, execute argmax on it to know the action
     """
+    @classmethod
+    def from_spec(cls, spec):
+        """ spec: the model spec (type MACNConfig) """
+        return cls(
+            image_shape=spec.image_shape,
+            vin_config=VINConfig(**spec.vin_config),
+            access_config=spec.access_config, 
+            controller_config=spec.controller_config
+        )
+
     def __init__(self, *, image_shape, vin_config, access_config, controller_config):
         
         self.X = tf.placeholder(tf.float32, shape=[None] + image_shape, name='X')
@@ -73,6 +105,18 @@ class BatchMACN(object):
     prob_actions : (batch_size, ch_q,) - the action probabilities, execute argmax() on it to know the action
 
     """
+    @classmethod
+    def from_spec(cls, spec, batch_size, seq_length):
+        """ spec: the model spec (type MACNConfig) """
+        return cls(
+            image_shape=spec.image_shape,
+            vin_config=VINConfig(**spec.vin_config),
+            access_config=spec.access_config, 
+            controller_config=spec.controller_config,
+            batch_size=batch_size, 
+            seq_length=seq_length
+        )
+
     def __init__(self, *, image_shape, vin_config, access_config, controller_config, batch_size, seq_length):
         
         self.X = tf.placeholder(tf.float32, shape=[batch_size, seq_length] + image_shape, name='X')
@@ -95,7 +139,6 @@ class BatchMACN(object):
             initial_state=self.state_in
         )
         self.prob_actions = tf.nn.softmax(self.logits, name='probability_actions')
-
 
 
 def VIN(X, vin_config):
@@ -144,3 +187,4 @@ def conv2d(*, inputs, filters, name, use_bias=False, reuse=False):
         name=name,
         reuse=reuse
     )
+
