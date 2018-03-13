@@ -1,0 +1,6 @@
+tqdm
+joblib
+gym
+gym_pathfinding
+dm-sonnet
+tensorflow
