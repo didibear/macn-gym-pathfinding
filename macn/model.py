@@ -162,13 +162,13 @@ def VIN(X, vin_config):
 
     rv = tf.concat([r, v], axis=3)
     q = conv2d(inputs=rv, filters=vin_config.ch_q, name='q', reuse=None)  # Initial set before sharing weights
-    v = tf.reduce_max(q, axis=3, keep_dims=True, name='v')
+    v = tf.reduce_max(q, axis=3, keepdims=True, name='v')
 
     # K iterations of VI module
     for _ in range(vin_config.k):
         rv = tf.concat([r, v], axis=3)
         q = conv2d(inputs=rv, filters=vin_config.ch_q, name='q', reuse=True) # Sharing weights
-        v = tf.reduce_max(q, axis=3, keep_dims=True, name='v')
+        v = tf.reduce_max(q, axis=3, keepdims=True, name='v')
 
     rv = tf.concat([r, v], axis=3)
     return rv
