@@ -11,7 +11,7 @@ import itertools
 
 GOAL_VALUE = 3
 
-def generate_dataset(size, shape, *, timesteps= 10, grid_type="free", observable_depth=2, verbose=False):
+def generate_dataset(size, shape, *, timesteps= 10, grid_type="free", observable_depth=5):
     """
     Arguments
     ---------
@@ -46,17 +46,20 @@ def generate_dataset(size, shape, *, timesteps= 10, grid_type="free", observable
                 action = action_planning[timestep]
                 position = path[timestep]
 
+                # Compute the partial grid
                 _partial_grid = partial_grid(grid, position, observable_depth)
                 _partial_grid = grid_with_start(_partial_grid, position)
 
+                # Goal grid contains something only if the goal is visible
                 where_is_goal = _partial_grid == GOAL_VALUE
                 goal_grid = create_goal_grid(grid.shape, where_is_goal)
 
+                # Stack partial and goal grid
                 image = np.stack([_partial_grid, goal_grid], axis=2)
 
             images.append(image)
             labels.append(action)
-
+            
         episodes.append((images, labels))
     return episodes
 
@@ -95,16 +98,16 @@ def main():
 
     parser = argparse.ArgumentParser(description='Generate data, list of (images, labels)')
     parser.add_argument('--out', '-o', type=str, default='./data/dataset.pkl', help='Path to save the dataset')
-    parser.add_argument('--size', '-s', type=int, default=5000, help='Number of example')
-    parser.add_argument('--shape', type=int, default=[9, 9], nargs=2, help='Shape of the grid (e.g. --shape 9 9)')
-    parser.add_argument('--grid_type', type=str, default='free', help='Type of grid : "free", "obstacle" or "maze"')
-    parser.add_argument('--timesteps', type=int, default=10, help='Number of timestep per episode (constant for all, no matter what happened)')
+    parser.add_argument('--size', '-s', type=int, default=20000, help='Number of example')
+    parser.add_argument('--shape', type=int, default=[16, 16], nargs=2, help='Shape of the grid (e.g. --shape 9 9)')
+    parser.add_argument('--grid_type', type=str, default='obstacle', help='Type of grid : "free", "obstacle" or "maze"')
+    parser.add_argument('--timesteps', type=int, default=40, help='Number of timestep per episode (constant for all, no matter what happened)')
     args = parser.parse_args()
 
     dataset = generate_dataset(args.size, args.shape, 
         grid_type=args.grid_type, 
-        observable_depth=2,
-        verbose=True
+        observable_depth=5,
+        timesteps=args.timesteps
     )
 
     print("Saving data into {}".format(args.out))
