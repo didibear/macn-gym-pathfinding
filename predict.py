@@ -23,9 +23,12 @@ word_size = 8
 num_reads = 4
 num_writes = 1
 
-episodes = 200
+episodes = 100
+visualize = False
+deterministic = False
 
-imsize = 9
+imsize = 16
+timesteps = 40
 
 def main():
     # MACN model
@@ -44,19 +47,20 @@ def main():
     with tf.Session() as sess:
         saver.restore(sess, "./model/weights_batch.ckpt")
 
-        env = gym.make('partially-observable-pathfinding-free-{n}x{n}-d2-v0'.format(n=imsize))
+        env = gym.make('partially-observable-pathfinding-obstacle-{n}x{n}-d5-v0'.format(n=imsize))
 
         dones = 0
         for episode in range(episodes):
-            env.seed(episode)
+            if deterministic: env.seed(episode)
             print(episode, end="\r")
 
             model_state = sess.run([macn.state_in])
 
             state = env.reset()
-            for timestep in range(15):
-                # env.render()
-                # sleep(0.2)
+            for timestep in range(timesteps):
+                if visualize:
+                    env.render()
+                    sleep(0.05)
 
                 grid, grid_goal = parse_state(state)
 
