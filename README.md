@@ -9,8 +9,8 @@ Memory Augmented Control Network implementation for gym-pathfinding
 
 ## Implementation
 
-The VIN part is taken from [VIN_TensorFlow](https://github.com/zuoxingdong/VIN_TensorFlow)
-The DNC part is taken from [Deepmind DNC](https://github.com/deepmind/dnc)
+- The VIN part is taken from [VIN_TensorFlow](https://github.com/zuoxingdong/VIN_TensorFlow)
+- The DNC part is taken from [Deepmind DNC](https://github.com/deepmind/dnc)
 
 ## Benchmark (WIP)
 
